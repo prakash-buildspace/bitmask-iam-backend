@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
+import { PermissionSetModule } from './PermissionSet/PermissionSet.module.js';
 
 @Module({
-  imports: [],
+  imports: [PermissionSetModule],
   controllers: [],
   providers: [],
-  exports: [],
+  exports: [PermissionSetModule],
 })
 export class ModulesModule {}
