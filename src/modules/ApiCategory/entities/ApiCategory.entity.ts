@@ -1,59 +1,62 @@
 import {
-  Table,
-  Column,
-  Model,
-  DataType,
-  PrimaryKey,
   AutoIncrement,
-  Unique,
+  Column,
   CreatedAt,
+  DataType,
+  HasMany,
+  Model,
+  PrimaryKey,
+  Table,
+  Unique,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { ApiEndpoint } from '../../ApiEndpoint/entities/ApiEndpoint.entity.js';
 
 @Table({
-  tableName: 'PermissionSet',
+  tableName: 'ApiCategory',
   timestamps: true,
   createdAt: 'created',
   updatedAt: 'updated',
 })
-export class PermissionSet extends Model {
+export class ApiCategory extends Model {
   @PrimaryKey
   @AutoIncrement
   @Column({
-    type: DataType.BIGINT.UNSIGNED,
+    type: DataType.INTEGER,
     field: 'id',
   })
   declare id: number;
 
-  @Unique('uq_permission_set_name')
+  @Unique('uq_api_category_name')
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
-    field: 'PermissionSet_name',
+    field: 'category_name',
   })
-  declare permissionSetName: string;
+  declare categoryName: string;
 
+  @Unique('uq_api_category_tag')
   @Column({
-    type: DataType.TEXT,
+    type: DataType.STRING(255),
     allowNull: true,
-    field: 'PermissionSet_description',
+    field: 'category_tag',
   })
-  declare permissionSetDescription: string | null;
+  declare categoryTag: string | null;
 
+  @Unique('uq_api_category_bit_index')
   @Column({
-    type: DataType.TINYINT,
+    type: DataType.SMALLINT.UNSIGNED,
     allowNull: false,
-    defaultValue: 0,
-    field: 'is_system_PermissionSet',
-    comment: '1=predefined immutable, 0=custom tenant PermissionSet',
+    field: 'bit_index',
+    comment:
+      'Stable bit position in category_bitmap; assigned once, never reused',
   })
-  declare isSystemPermissionSet: number;
+  declare bitIndex: number;
 
   @Column({
     type: DataType.TINYINT,
     allowNull: false,
     defaultValue: 1,
-    field: 'status',
     comment: '1=active, 0=inactive, 2=deleted',
   })
   declare status: number;
@@ -71,4 +74,7 @@ export class PermissionSet extends Model {
     field: 'updated',
   })
   declare updated: Date;
+
+  @HasMany(() => ApiEndpoint, { foreignKey: 'api_category_id' })
+  declare apiEndpoints?: ApiEndpoint[];
 }

@@ -74,7 +74,7 @@ export class UpdatePermissionSetDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Status: 1 for active, 0 for inactive',
+    description: 'Status: 1 for active, 0 for inactive. Note: soft-deleted (2) cannot be recovered',
     enum: [0, 1],
   })
   @IsOptional()

@@ -8,6 +8,7 @@ import {
   ResourceNotFoundException,
   ValidationException,
 } from '../../../common/exceptions/app.exception.js';
+import { RecordStatus } from '../../../common/constants/status.constant.js';
 import {
   CreatePermissionSetDto,
   ListPermissionSetDto,
@@ -42,9 +43,17 @@ export class PermissionSetService {
       });
 
       if (existingPermissionSet) {
-        throw new ConflictException(
-          `PermissionSet with name "${permissionSetName}" already exists`,
-        );
+        if (existingPermissionSet.status === RecordStatus.DELETED) {
+          // release legacy soft-deleted record's name so new record can reuse the name
+          const deletedSuffix = `__deleted_${existingPermissionSet.id}_${Date.now()}`;
+          const maxBaseLength = 255 - deletedSuffix.length;
+          existingPermissionSet.permissionSetName = `${permissionSetName.slice(0, maxBaseLength)}${deletedSuffix}`;
+          await existingPermissionSet.save();
+        } else {
+          throw new ConflictException(
+            `PermissionSet with name "${permissionSetName}" already exists`,
+          );
+        }
       }
 
       const permissionSetDescription = dto.description ? dto.description.trim() : null;
@@ -56,7 +65,7 @@ export class PermissionSetService {
         permissionSetName,
         permissionSetDescription,
         isSystemPermissionSet: 0,
-        status: 1,
+        status: RecordStatus.ACTIVE,
       });
     } catch (error) {
       if (error instanceof AppException || error instanceof BaseError) {
@@ -104,6 +113,12 @@ export class PermissionSetService {
         );
       }
 
+      if (permissionSet.status === RecordStatus.DELETED) {
+        throw new ValidationException(
+          `PermissionSet with ID ${id} has been deleted and cannot be recovered or updated`,
+        );
+      }
+
       // step 5: protect immutable system-level permission sets from any modification
       if (Number(permissionSet.isSystemPermissionSet) === 1) {
         throw new ValidationException(
@@ -122,9 +137,17 @@ export class PermissionSetService {
         });
 
         if (existingPermissionSet) {
-          throw new ConflictException(
-            `PermissionSet with name "${updatedPermissionSetName}" already exists`,
-          );
+          if (existingPermissionSet.status === RecordStatus.DELETED) {
+            // release legacy soft-deleted record's name so current record can adopt this name
+            const deletedSuffix = `__deleted_${existingPermissionSet.id}_${Date.now()}`;
+            const maxBaseLength = 255 - deletedSuffix.length;
+            existingPermissionSet.permissionSetName = `${updatedPermissionSetName.slice(0, maxBaseLength)}${deletedSuffix}`;
+            await existingPermissionSet.save();
+          } else {
+            throw new ConflictException(
+              `PermissionSet with name "${updatedPermissionSetName}" already exists`,
+            );
+          }
         }
 
         permissionSet.permissionSetName = updatedPermissionSetName;
@@ -167,7 +190,7 @@ export class PermissionSetService {
       // step 2: find target record in database
       const permissionSet = await this.permissionSetModel.findByPk(id);
 
-      if (!permissionSet) {
+      if (!permissionSet || permissionSet.status === RecordStatus.DELETED) {
         throw new ResourceNotFoundException(
           `PermissionSet with ID ${id} not found`,
           'PermissionSet',
@@ -181,9 +204,14 @@ export class PermissionSetService {
         );
       }
 
-      // step 4: delete record from database
-      await permissionSet.destroy();
-      this.logger.log(`Deleted PermissionSet: [${id}] ${permissionSet.permissionSetName}`);
+      // step 4: release unique name for future reuse and mark status as DELETED
+      const deletedSuffix = `__deleted_${id}_${Date.now()}`;
+      const maxBaseLength = 255 - deletedSuffix.length;
+      const baseName = permissionSet.permissionSetName.slice(0, maxBaseLength);
+      permissionSet.permissionSetName = `${baseName}${deletedSuffix}`;
+      permissionSet.status = RecordStatus.DELETED;
+      await permissionSet.save();
+      this.logger.log(`Soft-deleted PermissionSet: [${id}] (released name "${baseName}")`);
 
       return {
         success: true,
@@ -222,13 +250,16 @@ export class PermissionSetService {
 
       if (filters.status !== undefined) {
         filterConditions.status = filters.status;
+      } else {
+        // step 3: exclude soft-deleted records by default
+        filterConditions.status = { [Op.ne]: RecordStatus.DELETED };
       }
 
       if (filters.isSystem !== undefined) {
         filterConditions.isSystemPermissionSet = filters.isSystem;
       }
 
-      // step 3: enforce safe pagination boundaries
+      // step 4: enforce safe pagination boundaries
       const paginationLimit = Math.min(Math.max(Number(filters.limit) || 20, 1), 100);
       const paginationOffset = Math.max(Number(filters.offset) || 0, 0);
 
