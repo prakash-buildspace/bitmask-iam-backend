@@ -25,6 +25,7 @@ A robust, enterprise-grade Identity & Access Management (IAM) backend service bu
   - [Unified Response Format](#unified-response-format)
   - [Correlation ID & Request Logging](#correlation-id--request-logging)
   - [Exception Handling](#exception-handling)
+- [Git & Branching Workflow](#git--branching-workflow)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -326,6 +327,47 @@ Centralized exception filters intercept errors before they leave the server:
 - **`HttpExceptionFilter`**: Formats standard HTTP errors (e.g. 400, 401, 403, 404, 429) with structured error codes.
 - **`DatabaseExceptionFilter`**: Translates Sequelize errors (such as `UniqueConstraintError` or `ForeignKeyConstraintError`) into friendly HTTP 409 Conflict / 400 Bad Request responses.
 - **`AllExceptionsFilter`**: Catches unhandled errors, logs a stack trace with a unique `errorId` (UUID), and returns a safe HTTP 500 payload without leaking internal details.
+
+---
+
+## Git & Branching Workflow
+
+This project follows a structured branch promotion strategy to ensure production stability:
+
+```text
+feature/* or fix/*  ──►  staging (Development & Testing)  ──►  main (Production Ready)
+```
+
+| Branch | Purpose | Policies |
+|---|---|---|
+| **`staging`** | Active development, integration, and pre-production QA | Developers push new features, bug fixes, and development code here. Automated tests and integration testing run against staging. |
+| **`main`** | Production-ready stable release | Code is only merged from `staging` to `main` after full test suites pass and manual QA verification is completed. |
+
+### Development Workflow:
+1. Create a feature branch or checkout `staging`:
+   ```bash
+   git checkout staging
+   git pull origin staging
+   git checkout -b feature/my-new-feature
+   ```
+2. Implement changes, format, lint, and test:
+   ```bash
+   npm run format
+   npm run lint
+   npm run test:e2e
+   ```
+3. Commit and merge into `staging`:
+   ```bash
+   git checkout staging
+   git merge feature/my-new-feature
+   git push origin staging
+   ```
+4. Once verified on staging, promote to `main`:
+   ```bash
+   git checkout main
+   git merge staging
+   git push origin main
+   ```
 
 ---
 
