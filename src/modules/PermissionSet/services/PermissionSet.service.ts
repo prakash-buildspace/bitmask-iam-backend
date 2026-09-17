@@ -46,7 +46,7 @@ export class PermissionSetService {
         if (existingPermissionSet.status === RecordStatus.DELETED) {
           // release legacy soft-deleted record's name so new record can reuse the name
           const deletedSuffix = `__deleted_${existingPermissionSet.id}_${Date.now()}`;
-          const maxBaseLength = 255 - deletedSuffix.length;
+          const maxBaseLength = this.getColumnMaxLength('permissionSetName') - deletedSuffix.length;
           existingPermissionSet.permissionSetName = `${permissionSetName.slice(0, maxBaseLength)}${deletedSuffix}`;
           await existingPermissionSet.save();
         } else {
@@ -140,7 +140,7 @@ export class PermissionSetService {
           if (existingPermissionSet.status === RecordStatus.DELETED) {
             // release legacy soft-deleted record's name so current record can adopt this name
             const deletedSuffix = `__deleted_${existingPermissionSet.id}_${Date.now()}`;
-            const maxBaseLength = 255 - deletedSuffix.length;
+            const maxBaseLength = this.getColumnMaxLength('permissionSetName') - deletedSuffix.length;
             existingPermissionSet.permissionSetName = `${updatedPermissionSetName.slice(0, maxBaseLength)}${deletedSuffix}`;
             await existingPermissionSet.save();
           } else {
@@ -206,7 +206,7 @@ export class PermissionSetService {
 
       // step 4: release unique name for future reuse and mark status as DELETED
       const deletedSuffix = `__deleted_${id}_${Date.now()}`;
-      const maxBaseLength = 255 - deletedSuffix.length;
+      const maxBaseLength = this.getColumnMaxLength('permissionSetName') - deletedSuffix.length;
       const baseName = permissionSet.permissionSetName.slice(0, maxBaseLength);
       permissionSet.permissionSetName = `${baseName}${deletedSuffix}`;
       permissionSet.status = RecordStatus.DELETED;
@@ -277,5 +277,11 @@ export class PermissionSetService {
       this.logger.error('Failed to list PermissionSets', error instanceof Error ? error.stack : error);
       throw new DatabaseException('Failed to list PermissionSets from database');
     }
+  }
+
+  // dynamically extract column max length from model metadata
+  private getColumnMaxLength(fieldName: string): number {
+    const attr = (this.permissionSetModel.getAttributes() as Record<string, any>)?.[fieldName];
+    return attr?.type?.options?.length ?? attr?.type?._length ?? 255;
   }
 }

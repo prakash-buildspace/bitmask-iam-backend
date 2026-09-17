@@ -13,7 +13,7 @@ import {
 import { ApiEndpoint } from '../../ApiEndpoint/entities/ApiEndpoint.entity.js';
 
 @Table({
-  tableName: 'ApiCategory',
+  tableName: 'bc_api_endpoints_category',
   timestamps: true,
   createdAt: 'created',
   updatedAt: 'updated',
@@ -27,7 +27,7 @@ export class ApiCategory extends Model {
   })
   declare id: number;
 
-  @Unique('uq_api_category_name')
+  @Unique('uq_bc_api_endpoints_category_name')
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
@@ -35,15 +35,15 @@ export class ApiCategory extends Model {
   })
   declare categoryName: string;
 
-  @Unique('uq_api_category_tag')
+  @Unique('uq_bc_api_endpoints_category_tag')
   @Column({
     type: DataType.STRING(255),
     allowNull: true,
-    field: 'category_tag',
+    field: 'bc_category_tag',
   })
   declare categoryTag: string | null;
 
-  @Unique('uq_api_category_bit_index')
+  @Unique('uq_bc_api_endpoints_category_bit_index')
   @Column({
     type: DataType.SMALLINT.UNSIGNED,
     allowNull: false,
@@ -75,6 +75,6 @@ export class ApiCategory extends Model {
   })
   declare updated: Date;
 
-  @HasMany(() => ApiEndpoint, { foreignKey: 'api_category_id' })
+  @HasMany(() => ApiEndpoint, { foreignKey: 'bc_api_endpoints_category_id' })
   declare apiEndpoints?: ApiEndpoint[];
 }

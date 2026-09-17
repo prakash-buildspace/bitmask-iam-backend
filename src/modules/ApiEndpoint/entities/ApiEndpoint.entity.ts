@@ -14,13 +14,13 @@ import {
 import { ApiCategory } from '../../ApiCategory/entities/ApiCategory.entity.js';
 
 @Table({
-  tableName: 'ApiEndpoint',
+  tableName: 'bc_api_endpoints',
   timestamps: true,
   createdAt: 'created',
   updatedAt: 'updated',
   indexes: [
     {
-      name: 'idx_api_endpoint',
+      name: 'idx_bc_api_endpoints_api_endpoint',
       fields: ['api_endpoint'],
     },
   ],
@@ -38,14 +38,14 @@ export class ApiEndpoint extends Model {
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    field: 'api_category_id',
+    field: 'bc_api_endpoints_category_id',
   })
   declare apiCategoryId: number;
 
   @BelongsTo(() => ApiCategory, {
-    foreignKey: 'api_category_id',
+    foreignKey: 'bc_api_endpoints_category_id',
   })
-  declare apiCategory?: ApiCategory;
+  declare apiCategory?: ApiCategory | null;
 
   @Column({
     type: DataType.STRING(255),
@@ -63,15 +63,15 @@ export class ApiEndpoint extends Model {
   })
   declare httpMethod: string;
 
-  @Unique('uq_api_endpoint_tag')
+  @Unique('uq_bc_api_endpoints_tag')
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
-    field: 'endpoint_tag',
+    field: 'bc_tag',
   })
   declare endpointTag: string;
 
-  @Unique('uq_api_endpoint_bit_index')
+  @Unique('uq_bc_api_endpoints_bit_index')
   @Column({
     type: DataType.SMALLINT.UNSIGNED,
     allowNull: false,
