@@ -1,0 +1,98 @@
+services:
+  # ============================================================================
+  # NestJS IAM Backend Application
+  # ============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: bitmask-iam-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4001}:4001"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=4001
+      - API_PREFIX=${API_PREFIX:-api}
+      - API_VERSION=${API_VERSION:-1}
+      - SERVER_URLS=${SERVER_URLS:-http://localhost:4001}
+      - SWAGGER_ENABLED=${SWAGGER_ENABLED:-true}
+      - SWAGGER_PATH=${SWAGGER_PATH:-api/doc}
+      - SWAGGER_BASIC_AUTH_USERNAME=${SWAGGER_BASIC_AUTH_USERNAME:-developer}
+      - SWAGGER_BASIC_AUTH_PASSWORD=${SWAGGER_BASIC_AUTH_PASSWORD:-changeme}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-root}
+      - DB_PASS=${DB_PASS:-rootpassword}
+      - DB_NAME=${DB_NAME:-iam_testing_db}
+      - DB_SYNC=${DB_SYNC:-false}
+      - DB_LOGGING=${DB_LOGGING:-false}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_TLS=${REDIS_TLS:-false}
+      - REDIS_REQUIRED=${REDIS_REQUIRED:-true}
+      - REDIS_KEY_PREFIX=${REDIS_KEY_PREFIX:-bit-iam:}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bitmask-network
+
+  # ============================================================================
+  # MySQL Database Service
+  # ============================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: bitmask-iam-mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-iam_testing_db}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - bitmask-network
+
+  # ============================================================================
+  # Redis Cache Service
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: bitmask-iam-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bitmask-network
+
+# ==============================================================================
+# Persistent Volumes & Network Definitions
+# ==============================================================================
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  bitmask-network:
+    driver: bridge

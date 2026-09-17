@@ -13,8 +13,8 @@ A robust, enterprise-grade Identity & Access Management (IAM) backend service bu
 - [Prerequisites](#prerequisites)
 - [Environment Configuration](#environment-configuration)
 - [Getting Started](#getting-started)
-  - [Installation](#installation)
-  - [Running the Application](#running-the-application)
+  - [Quick Start with Docker (Recommended)](#quick-start-with-docker-recommended)
+  - [Local Setup (Without Docker)](#local-setup-without-docker)
   - [Building for Production](#building-for-production)
 - [Available Scripts](#available-scripts)
 - [API Documentation & Endpoints](#api-documentation--endpoints)
@@ -159,31 +159,73 @@ cp .env.example .env
 
 ## Getting Started
 
-### Installation
+### Quick Start with Docker (Recommended)
 
-Install dependencies using `npm`:
+The fastest way to spin up the Bitmask IAM Backend alongside its **MySQL** and **Redis** dependencies:
 
-```bash
-npm install
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/prakash-buildspace/bitmask-iam-backend.git
+   cd bitmask-iam-backend
+   ```
 
-### Running the Application
+2. **Copy environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
 
-```bash
-# Development mode with hot-reloading
-npm run start:dev
+3. **Start all services (API, MySQL, Redis):**
+   ```bash
+   # Production build
+   docker compose up --build -d
 
-# Standard start mode
-npm run start
+   # Or Development mode with hot-reloading:
+   docker compose -f docker-compose.dev.yml up --build
+   ```
 
-# Debug mode
-npm run start:debug
-```
+4. **Verify running containers:**
+   ```bash
+   docker compose ps
+   ```
+   The API will be available at:
+   - **Health Check**: [`http://localhost:4001/api/v1/health`](http://localhost:4001/api/v1/health)
+   - **Swagger Docs**: [`http://localhost:4001/api/doc`](http://localhost:4001/api/doc)
 
-Once running, the console will output:
-```text
-[Bootstrap] Bitmap IAM API started successfully on port 4001
-```
+5. **Stop services:**
+   ```bash
+   docker compose down
+   ```
+
+---
+
+### Local Setup (Without Docker)
+
+If you have local instances of MySQL 8.0 and Redis running on your machine:
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Configure environment:**
+   Ensure MySQL and Redis credentials in your `.env` match your local instances.
+
+3. **Run the application:**
+   ```bash
+   # Development mode with hot-reloading
+   npm run start:dev
+
+   # Standard start mode
+   npm run start
+
+   # Debug mode
+   npm run start:debug
+   ```
+
+   Once running, the console will output:
+   ```text
+   [Bootstrap] Bitmap IAM API started successfully on port 4001
+   ```
 
 ### Building for Production
 
